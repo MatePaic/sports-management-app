@@ -8,11 +8,19 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 export class UsersService {
     constructor(@InjectRepository(User) private repo: Repository<User>) {}
 
+    create(email: string, password: string, role?: string) {
+        const user = this.repo.create({ email, password, role });
+        
+        return this.repo.save(user);
+    }
+
     async findAll() {
         return this.repo.find();
     }
 
-    async findOne(id: string) {
+    async findById(id: string) {
+        if (!id) return null;
+        
         const user = await this.repo.findOne({
             where: { id },
         });
@@ -20,6 +28,14 @@ export class UsersService {
         if (!user) {
             throw new NotFoundException('User not found');
         }
+
+        return user;
+    }
+
+    async findByEmail(email: string) {
+        const user = await this.repo.findOne({
+            where: { email }
+        });
 
         return user;
     }

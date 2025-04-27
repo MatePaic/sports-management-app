@@ -1,4 +1,4 @@
-import { IsEmail, IsString } from "class-validator";
+import { IsEmail, IsIn, IsOptional, IsString } from "class-validator";
 
 export class CreateUserDto {
     @IsEmail()
@@ -6,4 +6,9 @@ export class CreateUserDto {
 
     @IsString()
     password: string;
+    
+    @IsOptional()
+    @IsString()
+    @IsIn(['user', 'admin']) // manual validation for allowed values
+    role?: string; // 'user' or 'admin'
 }

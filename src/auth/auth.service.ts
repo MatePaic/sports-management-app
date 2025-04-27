@@ -1,22 +1,54 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/users/user.entity';
-import { Repository } from 'typeorm';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { UsersService } from 'src/users/users.service';
+import { randomBytes, scrypt as _scrypt } from "crypto";
+import { promisify } from "util";
+
+const scrypt = promisify(_scrypt);
 
 @Injectable()
 export class AuthService {
-    constructor(@InjectRepository(User) private repo: Repository<User>) {}
+    constructor(
+      private usersService: UsersService
+    ) {}
 
-    async create(email: string, password: string) {
-        const existingUser = await this.repo.findOne({ where: { email } });
-        if (existingUser) {
-          throw new BadRequestException('Email already in use');
-        }
-      
-        const user = this.repo.create({ email, password });
-        
-        await this.repo.save(user);   
+    async signup(email: string, password: string, role?: string) {
+      // see if email is in use
+      const users = await this.usersService.findByEmail(email);
+      if (users) {
+          throw new BadRequestException('email in use');
+      }
 
-        return { message: 'User successfully created', user };
+      // Hash the users password
+      // Generate a salt
+      const salt = randomBytes(8).toString('hex');
+
+      // Hash the salt and the password together
+      const hash = (await scrypt(password, salt, 32)) as Buffer;
+
+      // Join the hashed result and the salt together
+      const saltedHashedPassword = salt + '.' + hash.toString('hex');
+
+      // create a new user and save it
+      const user = await this.usersService.create(email, saltedHashedPassword, role);
+
+      // return the user
+      return user;
+  }
+
+  async signin(email: string, password: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+        throw new NotFoundException('user not found');
     }
+
+    const [salt, storedHash] = user.password.split('.');
+
+    const hash = (await scrypt(password, salt, 32)) as Buffer;
+
+    if (storedHash !== hash.toString('hex')){
+        throw new BadRequestException('bad password');
+    } 
+    
+    return user;
+  }
 }

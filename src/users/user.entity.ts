@@ -12,8 +12,8 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ default: 'user' })
-  role: string; // 'user' or 'admin'
+  @Column() 
+  role: string;
 
   @OneToMany(() => Application, application => application.user)
   applications: Application[];

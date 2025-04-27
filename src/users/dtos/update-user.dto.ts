@@ -1,7 +1,7 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsString } from 'class-validator';
 
 export class UpdateUserDto {
-  @IsOptional()
   @IsString()
-  role?: string;
+  @IsIn(['user', 'admin']) // manual validation for allowed values
+  role: string;
 }
